@@ -34,6 +34,7 @@ class Oscillator {
 public:
   //
   Oscillator( int timer );        // Create an instance of an Oscillator using Timer "timer"
+  void begin();
   void setNote( int current_note );     // Set the current MIDI note
   void setPitchBend( int pitch_bend ); // Set the Pitchbend amount
 
@@ -41,7 +42,7 @@ protected:
   void setPreScaling( int midi_note );// Set up the pre-scaler appropriate for the given note
 
 
-  int m_note;
+    int m_note;
   int m_pitch_bend;
   int m_timer;
 };
@@ -58,7 +59,7 @@ void setup() {
 
 
   Serial.begin(9600);
-
+  OSC1.begin();
 
 
   // Connect the callbacks for MIDI input - these will be called on certain MIDI events:
@@ -106,6 +107,7 @@ void handlePitchBend( byte channel, int bend )
   OSC1.setPitchBend(bend);
 
 }
+
 
 
 

@@ -16,6 +16,9 @@
  * 
  ****************************************************************************/
 
+#include <math.h>
+
+
 // frequencies for midi notes 0 - 127
 // This data and much of the code in this file is based on the work described in
 // http://www.sinneb.net/?p=161
@@ -43,7 +46,9 @@ Oscillator::Oscillator( int timer )
   m_pitch_bend = 0; // Start with no pitch bend
 
   m_timer = timer;
+}
 
+void Oscillator::begin() {
   if( m_timer == 1 ) {
 
     // Timer1 is on pin 11
@@ -77,25 +82,31 @@ void Oscillator::setNote( int current_note )
 {
   m_note = current_note;
   float ratio;
-  int offset;
+  float factor;
+  int freq;
 
- setPreScaling(m_note);
- 
+  setPreScaling(m_note);
+
   if( m_pitch_bend == 0 ) { 
     OCR1A = musical_freqs[m_note];
   } 
   else {
     // Implement pitch bend. The MIDI standard suggests that the pitch bend is +/- two 
-    // semitones (or two MIDI notes). However because we use different pre-scalers for different
-    // note ranges we need to have some additional data to figure out the frequency.
-    // TODO - figure out how to handle discontiuity in frequency data
-    // and how to do a non-linear interpolation so it's more musicalß
-    ratio = (float)m_pitch_bend/ MIDI_PITCHBEND_MAX;
-    if( current_note < 125 ) {
-      offset = int((musical_freqs[m_note+2] - musical_freqs[m_note]) * ratio);
-      OCR1A = musical_freqs[m_note] + offset;
+    // semitones (or two MIDI notes). 
+    // To figure out the bend factor we need to find out what multiplication factor
+    // we need. This will be. Each octave doubles in frequency and there are tweleve
+    // semi-tones per octave. Therefore we need a factor of
+    // 2**(r*2/12) where r is the ratio 
+    ratio = fabs((float)m_pitch_bend/ MIDI_PITCHBEND_MAX);
+    factor = pow(2,(ratio*2/12));
+    if( m_pitch_bend < 0 ){
+      freq = musical_freqs[m_note] * factor;
+    } else {
+      freq = musical_freqs[m_note] / factor;
     }
+    OCR1A = freq;
   }
+  
 } 
 
 // Set the amount of pitch bend that is currently being applied, then replay the current
@@ -134,6 +145,7 @@ void Oscillator::setPreScaling (int midinote) {
   sei(); // interrupts on
 
 }
+
 
 
 
