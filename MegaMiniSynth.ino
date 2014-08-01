@@ -1,3 +1,13 @@
+/***************************************************************************
+Mega Mini Synth
+
+An Arduino Mega2560 based music synthesizer
+
+See http://megaminisynth.blogspot.co.nz/ for details.
+
+
+
+****************************************************************************/
 
 // DCO. Based on code from http://www.sinneb.net/?p=161
 
