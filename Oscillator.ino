@@ -96,9 +96,9 @@ void Oscillator::setNote( int current_note )
     // To figure out the bend factor we need to find out what multiplication factor
     // we need. This will be. Each octave doubles in frequency and there are tweleve
     // semi-tones per octave. Therefore we need a factor of
-    // 2**(r*2/12) where r is the ratio 
+    // 2**(r*2/12) or 2**(r/6) where r is the ratio 
     ratio = fabs((float)m_pitch_bend/ MIDI_PITCHBEND_MAX);
-    factor = pow(2,(ratio*2/12));
+    factor = pow(2,(ratio/6));
     if( m_pitch_bend < 0 ){
       freq = musical_freqs[m_note] * factor;
     } else {
@@ -146,6 +146,35 @@ void Oscillator::setPreScaling (int midinote) {
 
 }
 
-
+// Test the pitch bend scaling strategy
+// 0 == linear, 1 = power
+void Oscillator::testScaling(int scaling) {
+  
+  int  start_freq= 30578;
+  int end_freq = 27242;
+  int diff = end_freq - start_freq;
+  int freq;
+  float ratio;
+  
+  const int NUM_STEPS = 50;
+  setPreScaling(60);
+  OCR1A = freq;
+  for( int i=0; i<= NUM_STEPS; i++)
+  {
+    ratio = (float)i/NUM_STEPS;
+    if( scaling == 0 ) {
+      freq = start_freq + int(diff*ratio);
+    } else {
+      freq = start_freq/pow(2,(ratio/6));
+      
+    }
+    Serial.println(freq);
+    OCR1A = freq;
+    delay(100);
+  }
+  
+  
+  
+}
 
 
