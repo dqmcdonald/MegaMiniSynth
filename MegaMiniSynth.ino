@@ -23,14 +23,14 @@ MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 
 
 
-#define ENC1_RED_PIN        2
-#define ENC1_GREEN_PIN      3
-#define ENC1_BUTTON_PIN     4
+#define ENC1_RED_PIN        4
+#define ENC1_GREEN_PIN      6
+#define ENC1_BUTTON_PIN     7
 #define ENC1_BLUE_PIN       5
 
 #define TIMER1_OUT         11
-#define ENC1_PIN1          18
-#define ENC1_PIN2          19
+#define ENC1_PIN1           2
+#define ENC1_PIN2           3
 
 
 
@@ -111,7 +111,13 @@ void setup() {
   Serial.begin(9600);
   OSC1.begin();
   Encoder1.begin();
-  Encoder1.setColor( 200,150, 0 );
+  Encoder1.setColor(255,0, 0 );
+  delay(500);
+  Encoder1.setColor( 0, 255, 0 );
+  delay(500);
+  Encoder1.setColor( 0, 0, 255 );
+  delay(500);
+  Encoder1.setColor( 128, 128, 128 );
 
   // Connect the callbacks for MIDI input - these will be called on certain MIDI events:
   // 
@@ -196,6 +202,8 @@ void handleRotaryEncoders( ) {
       current_note = 126;
     }
     OSC1.setNote( current_note );
+    Encoder1.setColor( 128+2*(current_note-69),0,128-2*(current_note-69));
+   
   }
   last_val_enc1 = val;
 } 

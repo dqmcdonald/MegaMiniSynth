@@ -65,16 +65,32 @@ void RGBEncoder::begin() {
 // Each one is in the range 0-255;
 void RGBEncoder::setColor( int red, int green, int blue ) {
 
+  int r,g,b;
+  r=red;
+  if( r < 0 )
+    r = 0;
+  if( r > 255 )
+    r = 255;
 
-  // Map the color values into range for output pins
-  int r = map( red, 0,255, 0, 1024 );
-  int g = map( green, 0, 255, 0, 1024 );
-  int b = map( blue, 0, 255, 0, 1024 );
+  g=green;
+  if( g < 0 )
+    g = 0;
+  if( g > 255 )
+    g = 255;
 
-  // Write the values to the digital pins
-  analogWrite( m_red_pin, 1024-r );
-  analogWrite( m_green_pin, 1024-g );
-  analogWrite( m_blue_pin, 1024-b );
+  b=blue;
+  if( b < 0 )
+    b = 0;
+  if( b > 255 )
+    b = 255;
+
+ 
+
+  //Write the values to the digital pins
+  analogWrite( m_red_pin, 255-r );
+  analogWrite( m_green_pin, 255-g );
+  analogWrite( m_blue_pin, 255-b );
+
 
 } 
 
@@ -130,6 +146,8 @@ boolean RGBEncoder::buttonPressed() {
 
 
 }
+
+
 
 
 
