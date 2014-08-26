@@ -32,7 +32,8 @@ MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 #define ENC1_BUTTON_PIN     7
 #define ENC1_BLUE_PIN       5
 
-#define GATE_PIN            9
+#define DIGITAL_POT_SS_PIN  9
+
 #define TIMER1_OUT         11
 #define ENC1_PIN1           2
 #define ENC1_PIN2           3
@@ -43,6 +44,8 @@ MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 #define TFT_CS 53
 #define SD_CS 45
 
+#define DIGITAL_SWITCH_PIN1 22
+#define DIGITAL_SWITCH_PIN2 24
 
 
 class Oscillator {
@@ -102,6 +105,24 @@ private:
 
 };
 
+
+class DigitalPot {
+public:
+  DigitalPot( int ss_pin, int num_channels );
+
+  // Value is from 0-255
+  void setValue( int channel, int val );
+
+protected:
+
+  int m_ss_pin;
+  int m_num_channels;
+
+
+
+};
+
+
 // Object creation:
 
 
@@ -114,7 +135,12 @@ ENC1_BUTTON_PIN );
 
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
 
+// DigitalPot Instance:
+DigitalPot pot1 = DigitalPot( DIGITAL_POT_SS_PIN, 2 );
 
+
+
+int switch_mode;
 
 void setup() {
 
@@ -128,7 +154,7 @@ void setup() {
   delay(500);
   Encoder1.setColor( 0, 0, 255 );
   delay(500);
-  Encoder1.setColor( 128, 128, 128 );
+  Encoder1.setColor( 255, 255, 0 );
 
   // Connect the callbacks for MIDI input - these will be called on certain MIDI events:
   // 
@@ -139,8 +165,6 @@ void setup() {
   // Initiate MIDI communications, listen to all channels
   MIDI.begin(MIDI_CHANNEL_OMNI);
 
-  pinMode(GATE_PIN, OUTPUT );
-  digitalWrite(GATE_PIN, LOW );
 
   Serial.print("Initializing SD card...");
   if (!SD.begin(SD_CS)) {
@@ -157,7 +181,17 @@ void setup() {
   delay(1000);
   tft.fillScreen(0xFFFF);
   drawSlider( 50, 100 );
+
+  pinMode(DIGITAL_SWITCH_PIN1, OUTPUT );
+  pinMode(DIGITAL_SWITCH_PIN2, OUTPUT );
+  digitalWrite( DIGITAL_SWITCH_PIN1, LOW );
+  digitalWrite( DIGITAL_SWITCH_PIN1, LOW );
+  switch_mode = 0;
+
+  pot1.setValue( 0, 127 );
+  pot1.setValue( 1, 127 );
 }
+
 
 
 
@@ -182,13 +216,25 @@ void loop() {
 //A Note-on event has been received
 void handleNoteOn(byte channel, byte pitch, byte velocity)
 {
+  static char* note_string[] = { 
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"   };
+  int octave = (pitch / 12) - 1;
+  int note_index = (pitch % 12);
+
+
+
   // Pass the note onto the oscillators
   OSC1.setNote(int(pitch));
   Serial.print("Note on ");
   Serial.println(pitch);
-  digitalWrite(GATE_PIN, HIGH );
+  setSwitchMode( switch_mode );
 
-  drawSlider( int(pitch), 127 );
+  tft.fillRect(40, 200, 80, 40, 0xFFFF);
+  tft.setTextSize( 4 );
+  tft.setTextColor( 0x0);
+  tft.setCursor( 40,200);
+  tft.print(note_string[note_index]);
+  tft.print(octave);
 
 }
 
@@ -197,7 +243,8 @@ void handleNoteOff(byte channel, byte pitch, byte velocity)
 {
   // Do something when the note is released.
   // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
-  digitalWrite(GATE_PIN, LOW );
+  setSwitchMode( 0 );
+  tft.fillRect(40, 200, 80, 40, 0xFFFF);
 }
 
 // A pitch-bend event has been received:
@@ -214,33 +261,39 @@ void handlePitchBend( byte channel, int bend )
 
 int last_val_enc1= 0;
 int current_note = 69;
+int current_pot_val = 127;
 
 void handleRotaryEncoders( ) {
 
   if( Encoder1.buttonPressed()  ){
     // reset the current note to A
-    current_note = 69;
-    OSC1.setNote( current_note );
-    digitalWrite( GATE_PIN, HIGH );
+    //current_note = 69;
+    // OSC1.setNote( current_note );
+    switch_mode += 1;
+    if( switch_mode == 4 ) {
+      switch_mode =1;
+    }
+
   }
   int val = Encoder1.read();
   if( val < last_val_enc1 ) {
-    current_note--;
-    if( current_note < 1 )
-      current_note = 1;
-    OSC1.setNote( current_note );
-    drawSlider( current_note, 127 );
+    current_pot_val--;
+    if( current_pot_val < 0 )
+      current_pot_val = 0;
+
+    drawSlider( current_pot_val, 255 );
+    pot1.setValue( 0, current_pot_val );
   } 
   else if( val > last_val_enc1 ) {
-    current_note++;
-    if( current_note > 126 ) {
-      current_note = 126;
+    current_pot_val++;
+    if( current_pot_val > 255 ) {
+      current_note = 255;
     }
-    OSC1.setNote( current_note );
-    drawSlider( current_note, 127 );
 
+    drawSlider( current_pot_val, 255 );
+    pot1.setValue( 0, current_pot_val );
   }
-  Encoder1.setColor( 128+2*(current_note-69),0,128-2*(current_note-69));
+
   last_val_enc1 = val;
 
 } 
@@ -254,6 +307,10 @@ void drawSlider( int val, int maxval ) {
   static int last_val = -1;
   if( last_val < 0 ) {
     tft.drawRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT, 0x0);
+    tft.setTextSize( 3 );
+    tft.setTextColor( 0x0);
+    tft.setCursor( RECT_X, RECT_Y+RECT_HEIGHT+5);
+    tft.print("PWM");
   }
   // tft.fillRect( RECT_X + 1, RECT_Y+1, RECT_WIDTH-2, RECT_HEIGHT-2,
   //   0xFFFF );
@@ -271,6 +328,29 @@ void drawSlider( int val, int maxval ) {
 
   last_val = val;
 }
+
+void setSwitchMode( int smode )
+{
+  if( smode == 0 ) {
+    digitalWrite( DIGITAL_SWITCH_PIN1, LOW );
+    digitalWrite( DIGITAL_SWITCH_PIN2, LOW );
+  } 
+  else if( smode == 1 ) {
+    digitalWrite( DIGITAL_SWITCH_PIN1, HIGH );
+    digitalWrite( DIGITAL_SWITCH_PIN2, LOW ); 
+  } 
+  else if (smode == 2 ) {
+    digitalWrite( DIGITAL_SWITCH_PIN1, LOW );
+    digitalWrite( DIGITAL_SWITCH_PIN2, HIGH ); 
+  } 
+  else if (smode == 3 ) {
+    digitalWrite( DIGITAL_SWITCH_PIN1, HIGH );
+    digitalWrite( DIGITAL_SWITCH_PIN2, HIGH );  
+  }
+
+
+}
+
 
 
 
@@ -417,6 +497,10 @@ uint32_t read32(File & f) {
   ((uint8_t *)&result)[3] = f.read(); // MSB
   return result;
 }
+
+
+
+
 
 
 
