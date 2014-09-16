@@ -21,6 +21,12 @@
  ****************************************************************************/
 #include <Encoder.h>
 
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+
+// Note address is 0x41 - only pin A0 is high
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x41);
+
 
 #define BUTTON_DOWN HIGH
 #define BUTTON_DEBOUNCE_TIME 10  // Switch has to be held for 10ms to be considered down
@@ -28,27 +34,31 @@
 
 
 
-RGBEncoder::RGBEncoder( int enc_pin_1, int enc_pin_2, int red_pin, int blue_pin, 
-int green_pin, int button_pin ): 
+RGBEncoder::RGBEncoder( int enc_pin_1, int enc_pin_2, int red_channel, int blue_channel, 
+int green_channel, int button_pin ): 
 Encoder( enc_pin_1, enc_pin_2 ) {
 
 
-  m_red_pin  = red_pin;
-  m_green_pin = green_pin;
-  m_blue_pin = blue_pin;
+  m_red_channel  = red_channel;
+  m_green_channel = green_channel;
+  m_blue_channel = blue_channel;
   m_button_pin = button_pin;
   m_button_pressed = false;
 
+
+  pwm.begin();
+  pwm.setPWMFreq(1600);  // This is the maximum PWM frequency
+
+  // save I2C bitrate
+  uint8_t twbrbackup = TWBR;
+  // must be changed after calling Wire.begin() (inside pwm.begin())
+  TWBR = 12; // upgrade to 400KHz! 
 }
 
 
 // Start the rotary encoder operating
 void RGBEncoder::begin() {
 
-  // Set RGB Pin Modes for Output
-  pinMode( m_red_pin, OUTPUT );
-  pinMode( m_green_pin, OUTPUT );
-  pinMode( m_blue_pin, OUTPUT );
 
   // Set Switch mode for input:
   pinMode( m_button_pin, INPUT );
@@ -84,12 +94,15 @@ void RGBEncoder::setColor( int red, int green, int blue ) {
   if( b > 255 )
     b = 255;
 
- 
+  r = map( r, 0,255,0,4096);
+  g = map( g, 0,255,0,4096);
+  b = map( b, 0,255,0,4096);
 
-  //Write the values to the digital pins
-  analogWrite( m_red_pin, 255-r );
-  analogWrite( m_green_pin, 255-g );
-  analogWrite( m_blue_pin, 255-b );
+
+  // Write the values to the PCA9685
+  pwm.setPWM( m_red_channel, 0, 4096-r );
+  pwm.setPWM( m_green_channel, 0, 4096-g );
+  pwm.setPWM( m_blue_channel, 0, 4096-b );
 
 
 } 
@@ -146,6 +159,7 @@ boolean RGBEncoder::buttonPressed() {
 
 
 }
+
 
 
 

@@ -27,10 +27,12 @@ MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 
 
 
-#define ENC1_RED_PIN        4
-#define ENC1_GREEN_PIN      6
 #define ENC1_BUTTON_PIN     7
-#define ENC1_BLUE_PIN       5
+// The following are channels on the PA8685
+// PWM driver IC:
+#define ENC1_RED_CHANNEL    8
+#define ENC1_GREEN_CHANNEL  9
+#define ENC1_BLUE_CHANNEL  10
 
 #define DIGITAL_POT_SS_PIN  9
 
@@ -79,7 +81,7 @@ public Encoder {
 
 public:
 
-  RGBEncoder( int enc_pin_1, int enc_pin_2, int red_pin, int blue_pin, int green_pin, int button_pin );
+  RGBEncoder( int enc_pin_1, int enc_pin_2, int red_channel, int blue_channel, int green_channel, int button_pin );
 
   void begin(); // Start the rotary encoder operating
 
@@ -95,9 +97,9 @@ public:
 
 private:
 
-  int m_red_pin;
-  int m_green_pin;
-  int m_blue_pin;
+  int m_red_channel;
+  int m_green_channel;
+  int m_blue_channel;
   int m_button_pin;
   boolean m_button_pressed;
   long int m_button_down_time;
@@ -130,7 +132,7 @@ protected:
 Oscillator OSC1(1);
 
 // Rotary Encoder instances:
-RGBEncoder Encoder1( ENC1_PIN1, ENC1_PIN2, ENC1_RED_PIN, ENC1_GREEN_PIN, ENC1_BLUE_PIN,
+RGBEncoder Encoder1( ENC1_PIN1, ENC1_PIN2, ENC1_RED_CHANNEL, ENC1_GREEN_CHANNEL, ENC1_BLUE_CHANNEL,
 ENC1_BUTTON_PIN );
 
 Adafruit_ILI9340 tft = Adafruit_ILI9340(TFT_CS, TFT_DC, TFT_RST);
